@@ -88,9 +88,12 @@ normale Weg.
 - **Version selbst wählen bei Serien:** `GET /series/candidates` in
   `routes/series.ts` und `openmedia-web/src/components/show/episode-candidates.tsx`.
 - **Treasure Maps für Filme** (`llm-wiki/web-sources/treasure-maps-indexer-api.md`):
-  `GET /api/v1/movie` mit denselben Parametern wie `/tv` (`tmdbid`,
-  `imdbid`, `cat`, `extended=true`, `limit`). Film-Kategorien sind `2000`
-  (international) und `2100 Movies - DE`.
+  Film-Kategorien sind `2000` (international) und `2100 Movies - DE`.
+  **Korrektur 2026-11-08:** Anders als `/tv` lehnt `GET /api/v1/movie` eine
+  Suche nur mit `tmdbid` ab (`400 "Missing parameter: q or title"`), und mit
+  `q` fallen Releases mit englischem Namen weg. Die Film-Suche nutzt darum
+  `GET /api/v1/search?tmdbid=…&extended=true&limit=500` und behält nur die
+  Kategorien 2000–2999.
 - **Laufzeit:** `TmdbMovieResult` in `openmedia-api/src/lib/tmdb.ts` hat noch
   kein Feld `runtime`.
 
@@ -173,9 +176,10 @@ wird. Es muss im Knopf gut erkennbar sein.
   Suchen zählen nicht gegen das 400er-Limit, nur NZB-Downloads. Der
   bestehende 1-h-Cache je Film verhindert wiederholte Anfragen.
 - **Gemeinsame Bewertung:** Eigene NZBs und Indexer-Treffer kommen in eine
-  Liste und werden nach denselben Regeln sortiert. Bei gleicher Bewertung gilt:
-  schon auf S3 > eigene NZB > Indexer-Treffer. Grund: Das spart Zeit und
-  Limit. Eine eigene NZB, die gleichzeitig ein Indexer-Treffer ist (gleiche
+  Liste und werden nach denselben Regeln sortiert. Eine Version, die schon auf
+  S3 liegt, gewinnt in ihrer Sprachgruppe immer (siehe „Was gleiche Bewertung
+  heißt"). Sonst gilt bei gleicher Bewertung: eigene NZB > Indexer-Treffer.
+  Grund: Das spart Zeit und Limit. Eine eigene NZB, die gleichzeitig ein Indexer-Treffer ist (gleiche
   `indexerGuid`), erscheint nur einmal.
 - **Schon fertig:** Liegt die beste Version schon auf S3, dann ist der Knopf
   gold „Herunterladen" wie heute.
@@ -205,10 +209,15 @@ wird. Es muss im Knopf gut erkennbar sein.
   gelten die Qualitäts-Stufen.
 - **Was „gleiche Bewertung" heißt:** gleiche Gruppe, gleiche Qualitäts-Stufe
   und gleicher Bonus (Untertitel/Hörfilm). Die Größe zählt dabei **nicht**.
-  Beispiel: Ein 1080p-WEBRip im Zielbereich, der schon auf S3 liegt, schlägt
-  einen größeren 1080p-BluRay im Zielbereich vom Indexer. Grund: sofort
-  fertig, kein Limit verbraucht. Wer die größere Version will, wählt sie
-  selbst (6.2).
+- **Fertig gewinnt (Betreiber-Entscheidung 2026-11-08):** Innerhalb derselben
+  Sprachgruppe steht eine Version, die schon auf S3 liegt, **vor** allen
+  anderen, auch vor einer besseren Qualitäts-Stufe vom Indexer. Der Knopf
+  zeigt dann gold „Herunterladen". Grund: Der Film ist schon da und lässt sich
+  sofort schauen; kein Limit verbraucht. Deutsch schlägt weiter Nicht-Deutsch:
+  Ein fertiger englischer Film verdrängt keine deutsche Version. Wer eine
+  bessere Version will, wählt sie selbst (6.2).
+- **Abgelaufene eigene NZBs** (`status = expired`, z. B. die MongoDB-Importe
+  vom 2026-03-30) erscheinen gar nicht.
 - **Keine harte Größengrenze.** Riesige Remuxe rutschen schon über den
   Ziel-Größenbereich nach hinten.
 - **Alte Liste:** Die Gruppen „Deutsch", „Kein Deutsch" und „Kino-Mitschnitt"
@@ -246,9 +255,8 @@ wird. Es muss im Knopf gut erkennbar sein.
 
 ## 9. Dem Umsetzer überlassen
 
-- Neue Film-Suche in `treasure-maps.ts` (Kategorien `2000` und `2100`, oder
-  ohne `cat`, je nachdem was Treasure Maps vollständiger liefert — vorher mit
-  echter Anfrage prüfen).
+- Neue Film-Suche in `treasure-maps.ts`. Umgesetzt über `/search` (siehe
+  Abschnitt 5, Korrektur 2026-11-08).
 - Wie `rankReleases` für Filme verallgemeinert wird (ohne Staffel/Folge-Filter,
   mit nicht-deutschen Treffern als eigene, niedrigere Gruppe), ohne das
   Verhalten für Serien zu ändern.
@@ -265,8 +273,10 @@ wird. Es muss im Knopf gut erkennbar sein.
 - Wie Kino-Mitschnitte erkannt werden (Namens-Hinweise, ggf. Indexer-Felder).
 - `runtime` in `TmdbMovieResult` ergänzen.
 - Woher die Sprachen eigener NZBs kommen (`NzbFile.audioLanguages`), und was
-  bei eigenen NZBs ohne Sprachdaten gilt. Vorschlag: wie Indexer-Treffer ohne
-  MediaInfo über Namens-Hinweise.
+  bei eigenen NZBs ohne Sprachdaten gilt. Umgesetzt: mit ffprobe-Daten aus
+  `audioLanguages`, sonst wie Indexer-Treffer ohne MediaInfo nur aus echten
+  Namens-Hinweisen (der stille `en`-Standard des Parsers zählt als
+  unbekannt).
 - Genaue Gestaltung im Rahmen der bestehenden Komponenten und Farben.
 - Tests im bestehenden Vitest-Stil, vor allem Tabellentests für die gemeinsame
   Bewertung (deutsch schlechter vs. englisch besser, eigene NZB vs. Treffer bei
