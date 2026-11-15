@@ -1,6 +1,6 @@
 # Weiterschauen für openmedia — Design
 
-> Stand: 2026-11-15 · Status: Entwurf, wartet auf Freigabe
+> Stand: 2026-11-15 · Status: umgesetzt und deployed (api 122bbc6, web 8f49a11, tvos 18629f8)
 > Teil 1 von 4 des Vorhabens „KI-Vorschläge“ (siehe 1.1)
 
 ## 1. Absicht
