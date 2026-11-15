@@ -258,7 +258,9 @@ Ende einer Folge: **Countdown mit Autoplay** (Option B) statt nur Knopf
 - Eintrag entfernen per „×“ bzw. Kontextmenü.
 - `resume` im `stream-link`-Ergebnis statt eigenem Aufruf.
 - Angefangener Film ohne Datei bleibt in der Zeile, mit Download-Knopf
-  (wie vom Betreiber für Folgen gewünscht).
+  (wie vom Betreiber für Folgen gewünscht). Umsetzung (Plan): Die Film-Kachel
+  führt zur Detailseite, deren Ein-Klick-Download schon die Rückfrage bei
+  fremder Sprache kann; Folgen-Kacheln fordern direkt an.
 - „Zuletzt geschaut“ = neuestes `updatedAt`, auch bei Wiederholungen.
 - Zustand „angefangen / fertig“ aus der aktuellen Stelle (Kasten in 6.1).
 - **Kein Profil- oder Personen-Feld** in `watch_progress`: ein Konto pro
